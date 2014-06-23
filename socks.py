@@ -65,9 +65,8 @@ Fields marked RESERVED (RSV) must be set to X'00'.
 """
 
 import os,sys,time
-import socket,struct
+import socket,struct,select
 import re
-
 
 support_nmethod = ['\x00','\x02','\x01']     # 目前认证方法只支持(无验证/用户名密码/), 不支持GSSAPI,IANA ASSIGNED,RESERVED FOR PRIVATE METHODS
 support_version = ['\x05']                    # 目前仅支持 socks 版本 5.
@@ -150,6 +149,7 @@ class Request:
             "Connection Remote Target Host."
             remote_connect = socket.socket()
             remote_connect.connect(dst_host)
+            remote_connect.settimeout(5)
             #NOTE: 远端连接为IP Number.
             remote_peer_name = remote_connect.getpeername()[0]  #  -128 <= remote_peer_name <= 127
             remote_port = remote_connect.getpeername()[1]
@@ -194,22 +194,30 @@ class Transaction:
         print "Remote Response : %s" % remoet_data
         self.forward_to_client(remoet_data)
         """
-    def handle_tcp(self,sock, remote): 
-        import select
+    def handle_tcp(self,sock, remote):
+        #remote.settimeout = 5
         fdset = [sock, remote]
-        print('**  Handle TCP.')
+        print('** TCP转发')
         while True: 
-            r, w, e = select.select(fdset, [], []) 
+            r, w, e = select.select(fdset, [], [5]) 
             if sock in r: 
-                l_data = sock.recv(4096)
+                l_data = sock.recv(9216)
                 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\nInput(client in socks server):\n"
                 print repr(l_data)
-                if remote.send(l_data) <= 0: break
+                if l_data:
+                    if remote.send(l_data) <= 0:
+                        print "remote send not success."
+                        break
+                else: break
             if remote in r: 
-                r_data = remote.recv(4096)
+                r_data = remote.recv(9216)
                 print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\nOutput(socks server output client.):\n"
                 print repr(r_data)
-                if sock.send(r_data) <= 0: break
+                if r_data:
+                    if sock.send(r_data) <= 0:
+                        print "client send not success."
+                        break
+                else: break
 
     def recv_data(self,conn):
         # WARNING: 如果HTTP协议大小超过4096字节,并且在4096字节内无法读取到Content-Length字段
@@ -268,10 +276,9 @@ class Worker:
         self.address = address
         if True:
             meet = Meet(self.connection)
-            if meet:
+            if meet != False:
                 remote_connect = Request(self.connection,self.address)
                 self.r_connection = remote_connect.r_connection
-                print dir(self.r_connection)
                 if self.r_connection != False:
                     print "** 远程TCP已经建立"
                     if not Transaction(self.connection,self.r_connection):
@@ -297,9 +304,8 @@ def commander(ip,port):
     print("** 开始监听 %s:%d" %(ip,port) )
     s.bind((ip,port))
     s.listen(5)
-    
     while True:
-        print("\n\n** 等待连接 ... ") 
+        print("\n\n** 等待连接 ... ")
         connection,address = s.accept()
         #connection.settimeout(10)
         print("** 与%s:%d建立连接 ... " %(address[0],address[1] ) )
@@ -309,4 +315,4 @@ def commander(ip,port):
 
 if __name__ == '__main__':
     "代理服务器 地址及监听端口 "
-    commander('127.0.0.1',1071)
+    commander('127.0.0.1',1077)
