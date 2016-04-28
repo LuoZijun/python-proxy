@@ -78,22 +78,26 @@ class Forward:
                 buff = self.source.recv(9216)
                 
                 if not buff: break
+                
+                logging.debug('forward request by client:')
+                for line in buff.split("\n"):
+                    print "\t%s" % repr(line)
 
-                if self.target.send(buff) <= 0:
-                    break
-                else:
-                    logging.error('转发失败.')
-                    break
+                # logging.error('client request content forward to target fail.')
+                self.target.send(buff)
+
             if self.target in r: 
                 buff = self.target.recv(9216)
                 
                 if not buff: break
 
-                if self.source.send(buff) <= 0:
-                    break
-                else:
-                    logging.error('转发失败.')
-                    break
+                logging.debug('response back by remote:')
+                for line in buff.split("\n"):
+                    print "\t%s" % repr(line)
+
+                # logging.error('Target response forward to client fail.')
+                self.source.send(buff)
+                
 
     def guess_protocol(self):
         pass
@@ -152,6 +156,8 @@ class Connection:
         # 执行转发任务
         forward   =  Forward(source=self.connection, target=self.relay.connection)
         forward.start()
+
+        logging.info('forward done.')
 
         # End.
         self.connection.close()
