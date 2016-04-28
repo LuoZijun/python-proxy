@@ -59,13 +59,20 @@ support_addr_type = ['\x01','\x03']
 support_protocol  = ['HTTP']
 
 
-HTTP_RESPONSE     = '''HTTP/1.1 200 OK\r
+HTTP_RESPONSE     = '''HTTP/1.1 406 Not Acceptable\r
 Server: Python-Socks5/0.1 (Ubuntu)\r
 Content-Type: text/html\r
-Content-Length: 89\r
+Content-Length: 153\r
 Connection: close\r
 \r
-<html><title>Python Proxy Server</title><h1>This Is One Socks5 Proxy Server.</h1></html>
+<html>
+    <head>
+        <title>Python Proxy Server</title>
+    </head>
+    <body>
+        <h1>this is one socks5 proxy server.</h1>
+    </body>
+</html>
 \r\n'''
 
 class Forward:
