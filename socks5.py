@@ -3,10 +3,17 @@
 
 import os, sys, time
 import socket, struct, select
-# import re
+import logging
 
 reload(sys)
 sys.setdefaultencoding('utf8')
+
+logging.basicConfig(
+    # filename='proxy.log',
+    format='%(asctime)s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    level=logging.DEBUG
+)
 
 """
 RFC:
@@ -75,8 +82,7 @@ class Forward:
                 if self.target.send(buff) <= 0:
                     break
                 else:
-                    # not success
-                    print "ERROR: 转发失败。"
+                    logging.error('转发失败.')
                     break
             if self.target in r: 
                 buff = self.target.recv(9216)
@@ -86,7 +92,7 @@ class Forward:
                 if self.source.send(buff) <= 0:
                     break
                 else:
-                    print "ERROR: 转发失败。"
+                    logging.error('转发失败.')
                     break
 
     def guess_protocol(self):
@@ -133,8 +139,6 @@ class Connection:
         # config
         self.connection.settimeout(self.timeout)
     def start(self):
-        print "Session Begin ..."
-
         # 握手
         status = self.shake_hands()
         if status == False:
@@ -152,7 +156,6 @@ class Connection:
         # End.
         self.connection.close()
         self.relay.connection.close()
-        print "Session End."
 
     def process_request(self):
         # ATYP: DST.ADR.TYPE ( '\x01': IPv4, '\x03': DOMAINNAME, '\x04': IPv6 )
@@ -240,7 +243,7 @@ class Sock5:
         self.port = port
     def run(self):
         
-        print "Python proxy run on %s:%d ..." %(self.ip, self.port)
+        logging.info("Python proxy run on %s:%d ..." %(self.ip, self.port))
 
         self.service = socket.socket()
         self.service.bind((self.ip, self.port))
@@ -252,16 +255,18 @@ class Sock5:
     def loop(self):
         while True:
             conn, addr = self.service.accept()
+            host       = addr[0]+":"+str(addr[1])
+            logging.info('connection (%s) begin ...' % host)
             connection = Connection(connection=conn, ip=addr[0], port=addr[1])
             try:
                 connection.start()
             except socket.timeout:
-                pass
-
-
+                logging.warning('connection(%s) timeout.' % host)
+            logging.info('connection (%s) close.' % host)
 
 if __name__ == '__main__':
     ip   = "127.0.0.1"
     port = 1070
     sock5 = Sock5(ip=ip, port=port)
     sock5.run()
+
