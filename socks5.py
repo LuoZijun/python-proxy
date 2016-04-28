@@ -82,9 +82,9 @@ class Forward:
                 
                 if not buff: break
                 
-                logging.debug('forward request by client:')
-                for line in buff.split("\n"):
-                    print "\t%s" % repr(line)
+                # logging.debug('forward request by client:')
+                # for line in buff.split("\n"):
+                #    print "\t%s" % repr(line)
 
                 # logging.error('client request content forward to target fail.')
                 self.target.send(buff)
@@ -94,10 +94,10 @@ class Forward:
                 
                 if not buff: break
 
-                logging.debug('response back by remote:')
-                for line in buff.split("\n"):
-                    print "\t%s" % repr(line)
-
+                # logging.debug('response back by remote:')
+                # for line in buff.split("\n"):
+                #     print "\t%s" % repr(line)
+                
                 # logging.error('Target response forward to client fail.')
                 self.source.send(buff)
                 
@@ -158,7 +158,10 @@ class Connection:
 
         # 执行转发任务
         forward   =  Forward(source=self.connection, target=self.relay.connection)
-        forward.start()
+        try:
+            forward.start()
+        except:
+            logging.info('unknow error.')
 
         logging.info('forward done.')
 
