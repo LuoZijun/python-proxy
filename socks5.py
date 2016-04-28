@@ -28,7 +28,7 @@ RFC:
     X'01'    通用安全服务应用程序接口（GSSAPI）
     X'02'    用户名/密码(USERNAME/PASSWORD) 
     X'03'    至 X'7F' IANA 分配(IANA ASSIGNED) 
-    X'80'    至 X'FE' 私人方法保留(RESERVED FOR PRIVATE METHODS) 
+    X'80'    至 X'FE' 私有方法
     X'FF'    无可接受方法(NO ACCEPTABLE METHODS) 
 
 转发请求(Requests):
@@ -39,14 +39,14 @@ RFC:
         +----+-----+-------+------+----------+----------+
 
 连接类型(CMD):
-    CONNECT X'01'           建立连接
-    BIND X'02'              绑定
-    UDP ASSOCIATE X'03'     UDP连接
+    CONNECT      : X'01'    建立连接
+    BIND         : X'02'    绑定
+    UDP ASSOCIATE: X'03'    UDP连接
 
 地址类型(ATYP):
-    IP V4 address: X'01'          IP(IPv4)
-    DOMAINNAME: X'03'             域名
-    IP V6 address: X'04'          IP(IPv6)
+    IP V4 address: X'01'    IP(IPv4)
+    DOMAINNAME   : X'03'    域名
+    IP V6 address: X'04'    IP(IPv6)
 
 """
 
@@ -97,7 +97,7 @@ class Forward:
                 # logging.debug('response back by remote:')
                 # for line in buff.split("\n"):
                 #     print "\t%s" % repr(line)
-                
+
                 # logging.error('Target response forward to client fail.')
                 self.source.send(buff)
                 
