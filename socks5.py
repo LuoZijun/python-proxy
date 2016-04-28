@@ -3,9 +3,9 @@
 
 import os, sys, time
 import socket, struct, select
-import thread
+import thread, logging
 
-import logging
+from urlparse import urlparse
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -58,6 +58,7 @@ support_cmd       = ['\x01']
 support_addr_type = ['\x01','\x03']
 support_protocol  = ['HTTP']
 
+HTTP_METHODS      = ['GET', 'HEAD', 'PUT', 'DELETE', 'POST', 'CONNECT', 'OPTIONS', 'TRACE']
 
 HTTP_RESPONSE     = '''HTTP/1.1 406 Not Acceptable\r
 Server: Python-Socks5/0.1 (Ubuntu)\r
@@ -131,7 +132,7 @@ class Relay:
         peer_port       = conn.getpeername()[1]
 
         self.connection = conn
-
+        # self.connection.setblocking(0)
         return (peer_addr, struct.pack('!h',peer_port))
     def send(self, data):
         self.connection.send(data)
@@ -145,17 +146,24 @@ class Connection:
     connection = None
     relay      = None
 
-    timeout    = 10
+    timeout    = 30
     def __init__(self, connection=None, ip="", port=0):
         self.connection = connection
         self.ip         = ip
         self.port       = port
         # config
         self.connection.settimeout(self.timeout)
+    def close(self):
+        self.connection.close()
+        try:
+            self.relay.connection.close()
+        except:
+            pass
+
     def start(self):
         # 握手
         status = self.shake_hands()
-        if status == False:
+        if status == False or status == None:
             return self.connection.close()
 
         # 处理转发请求
@@ -173,8 +181,7 @@ class Connection:
         logging.info('forward done.')
 
         # End.
-        self.connection.close()
-        self.relay.connection.close()
+        self.close()
 
     def process_request(self):
         # ATYP: DST.ADR.TYPE ( '\x01': IPv4, '\x03': DOMAINNAME, '\x04': IPv6 )
@@ -238,14 +245,159 @@ class Connection:
         
         self.connection.send("".join(message))
         return True
+    def read_http_request(self, conn):
+        buff = ""
+        while True:
+            char = conn.recv(4096)
+            if not char: break
+            buff += char
+            if "\r\n\r\n" in buff:
+                # http header 读取完毕
+                http_content = buff.split("\r\n\r\n")
+                http_header  = http_content[0]
+                if len(http_content) > 1:
+                    del http_content[0]
+                    http_body = "\r\n\r\n".join(http_content)
+                else:
+                    http_body = ""
+
+                headers = http_header.split("\r\n")[1:]
+                for h in headers:
+                    k, v= h.split(": ")
+
+                    if k.lower() == 'content-length':
+                        limit_size = int(v) - len(http_body)
+                        tmp        = conn.recv(limit_size)
+                        buff      += tmp
+                        http_body += tmp
+                break
+            else:
+                if len(buff) > 2*1024*1024:
+                    return ""
+        return buff
+
+    def process_http_request(self, buff=""):
+        
+        status   = None
+        host     = ""
+        port     = 80
+        location = ""
+
+        num      = 1
+        while True:
+            char = self.connection.recv(num)
+            if not char: break
+
+            buff += char
+
+            if num == 1 and char == "\r":
+                _tmp = buff.split(" ")
+                if len(_tmp) < 2:
+                    self.connection.send('HTTP/1.1 400 Bad Request')
+                    status = False
+                    break
+
+                url = _tmp[1]
+                if url.startswith("http://") == False and url.startswith("https://") == False:
+                    url = "scheme://" + url
+                result  = urlparse(url)
+                if result.netloc == "":
+                    status = self.process_http_request_without_host()
+                    break
+
+                host     = result.netloc.split(":")[0]
+                if ":" in result.netloc:
+                    try:
+                        port = int(result.netloc.split(":")[1])
+                    except:
+                        pass
+
+                location     = result.path
+                if result.query:
+                    location = "?".join((location, result.query))
+                if result.fragment:
+                    location = "#".join((location, result.fragment))
+
+                num      = 4096
+            if "\r\n\r\n" in buff:
+                # http header 读取完毕
+                http_content = buff.split("\r\n\r\n")
+                http_header  = http_content[0]
+                if len(http_content) > 1:
+                    del http_content[0]
+                    http_body = "\r\n\r\n".join(http_content)
+                else:
+                    http_body = ""
+
+                headers = http_header.split("\r\n")[1:]
+                for h in headers:
+                    k, v= h.split(": ")
+
+                    if k.lower() == 'content-length':
+                        limit_size = int(v) - len(http_body)
+                        tmp        = self.connection.recv(limit_size)
+                        buff      += tmp
+                        http_body += tmp
+                break
+            else:
+                if len(buff) > 2*1024*1024:
+                    return None
+        logging.debug('[HTTP Proxy]: http request %s:%d:' %(host, port) )
+        for line in buff.split("\n"):
+            print "\t%s" % repr(line)
+
+        logging.debug('[Status]: %s' %(str(status)))
+
+        if status != None:
+            return status
+
+        lines   = buff.split("\r\n")
+        _tmp    = lines[0].split(" ")
+        _tmp[1] = location
+        lines[0]= " ".join(_tmp)
+        del _tmp
+
+        # HTTP Proxy
+        self.relay = Relay(ip=host, port=port )
+        # Http response
+        response   = ""
+        # try:
+        self.relay.connect()
+
+        logging.debug('[HTTP Proxy]: http request forward:')
+        for line in lines:
+            print "\t%s" % repr(line)
+        self.relay.connection.send("\r\n".join(lines))
+        response = self.read_http_request(self.relay.connection)
+
+        # except Exception as e:
+        #     # self.connection.close()
+        #     logging.error('[HTTP Proxy]: http request forward fail.')
+        #     print e
+        #     return False
+
+        logging.debug('[HTTP Proxy]: http response:')
+        for line in response.split("\n"):
+            print "\t%s" % repr(line)
+
+        self.connection.send(response)
+        return None
+
+    def process_http_request_without_host(self):
+        self.connection.send(HTTP_RESPONSE)
+        return False
 
     def shake_hands(self):
-        buff = self.connection.recv(3)
-        if buff == "GET":
-            # close connection.
-            self.connection.send(HTTP_RESPONSE)
-            return False
-        elif buff[0] in support_version and buff[1] in support_nmethod and buff[2] in support_method:
+        buff = self.connection.recv(10)
+        if buff.split(" ")[0] in HTTP_METHODS:
+            # HTTP Request
+            return self.process_http_request(buff=buff)
+
+        # data = self.connection.recv(4096)
+        # buff = self.connection.recv(3)
+        buff = buff[0:3]
+
+        if buff[0] in support_version and buff[1] in support_nmethod and buff[2] in support_method:
             self.connection.send('\x05\x00')
             return True
         else:
@@ -266,10 +418,14 @@ class Sock5:
 
         self.service = socket.socket()
         self.service.bind((self.ip, self.port))
-        self.service.listen(10)
+        self.service.listen(50)
 
         # run forever
-        self.loop()
+        try:
+            self.loop()
+        except (KeyboardInterrupt, SystemExit):
+            logging.info('server shutdown ...')
+            self.service.close()
 
     def process(self, conn, addr):
         host = "%s: %d" %(addr[0], addr[1])
@@ -281,6 +437,9 @@ class Sock5:
             connection.start()
         except socket.timeout:
             logging.warning('connection(%s) timeout.' % host)
+        except KeyboardInterrupt:
+            conn.close()
+            raise KeyboardInterrupt
 
         logging.info('connection (%s) close.' % host )
 
@@ -294,7 +453,7 @@ class Sock5:
 
 
 if __name__ == '__main__':
-    ip   = "127.0.0.1"
+    ip   = "0.0.0.0"
     port = 1070
     sock5 = Sock5(ip=ip, port=port)
     sock5.run()
