@@ -22,10 +22,14 @@ Python Socks5 Proxy
     cd python-proxy
     python sock5.py
 
+.. image:: sock5.config.png
+
 
 然后在你的浏览器当中的网络设置里，填上 代理地址： `127.0.0.1`，端口：`1070`。
 
 最后勾上 `SOCKS 5` 和 `远程DNS`选项。
+
+.. image:: sock5.png
 
 
 在你的代码当中引用：
