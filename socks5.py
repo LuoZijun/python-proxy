@@ -49,16 +49,14 @@ support_addr_type = ['\x01','\x03']
 support_protocol  = ['HTTP']
 
 
-HTTP_RESPONSE     = """
-HTTP/1.1 200 OK\r\n
-Server: Python-Socks5/0.1 (Ubuntu)\r\n
-Content-Type: text/html\r\n
-Content-Length: 89\r\n
-Connection: close\r\n
-\r\n
-<html><title>Python Proxy Server</title><h1>This Is One Socks Proxy Server.</h1></html>
-\r\n"""
-
+HTTP_RESPONSE     = '''HTTP/1.1 200 OK\r
+Server: Python-Socks5/0.1 (Ubuntu)\r
+Content-Type: text/html\r
+Content-Length: 89\r
+Connection: close\r
+\r
+<html><title>Python Proxy Server</title><h1>This Is One Socks5 Proxy Server.</h1></html>
+\r\n'''
 
 class Forward:
     # forward handler
@@ -136,12 +134,17 @@ class Connection:
         self.connection.settimeout(self.timeout)
     def start(self):
         print "Session Begin ..."
+
         # 握手
         status = self.shake_hands()
-        if status == False: self.connection.close()
+        if status == False:
+            return self.connection.close()
+
         # 处理转发请求
         status = self.process_request()
-        if status == False: self.connection.close()
+        if status == False:
+            return self.connection.close()
+
         # 执行转发任务
         forward   =  Forward(source=self.connection, target=self.relay.connection)
         forward.start()
@@ -217,6 +220,7 @@ class Connection:
     def shake_hands(self):
         buff = self.connection.recv(3)
         if buff == "GET":
+            # close connection.
             self.connection.send(HTTP_RESPONSE)
             return False
         elif buff[0] in support_version and buff[1] in support_nmethod and buff[2] in support_method:
@@ -235,6 +239,9 @@ class Sock5:
         self.ip   = ip
         self.port = port
     def run(self):
+        
+        print "Python proxy run on %s:%d ..." %(self.ip, self.port)
+
         self.service = socket.socket()
         self.service.bind((self.ip, self.port))
         self.service.listen(10)
@@ -246,7 +253,11 @@ class Sock5:
         while True:
             conn, addr = self.service.accept()
             connection = Connection(connection=conn, ip=addr[0], port=addr[1])
-            connection.start()
+            try:
+                connection.start()
+            except socket.timeout:
+                pass
+
 
 
 if __name__ == '__main__':
