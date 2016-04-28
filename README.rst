@@ -29,7 +29,7 @@ Python Socks5 Proxy
 
 最后勾上 `SOCKS 5` 和 `远程DNS`选项。
 
-.. image:: sock5s.png
+.. image:: socks5.png
 
 
 在你的代码当中引用：
