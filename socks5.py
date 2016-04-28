@@ -3,17 +3,20 @@
 
 import os, sys, time
 import socket, struct, select
+import thread
+
 import logging
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 
 logging.basicConfig(
-    # filename='proxy.log',
-    format='%(asctime)s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.DEBUG
+    # filename ='proxy.log',
+    format  = '%(asctime)s %(message)s',
+    datefmt = '%Y-%m-%d %H:%M:%S',
+    level   = logging.DEBUG
 )
+
 
 """
 RFC:
@@ -258,17 +261,27 @@ class Sock5:
         # run forever
         self.loop()
 
+    def process(self, conn, addr):
+        host = "%s: %d" %(addr[0], addr[1])
+
+        logging.info('connection (%s) begin ...' % host )
+        
+        connection = Connection(connection=conn, ip=addr[0], port=addr[1])
+        try:
+            connection.start()
+        except socket.timeout:
+            logging.warning('connection(%s) timeout.' % host)
+
+        logging.info('connection (%s) close.' % host )
+
     def loop(self):
         while True:
             conn, addr = self.service.accept()
-            host       = addr[0]+":"+str(addr[1])
-            logging.info('connection (%s) begin ...' % host)
-            connection = Connection(connection=conn, ip=addr[0], port=addr[1])
             try:
-                connection.start()
-            except socket.timeout:
-                logging.warning('connection(%s) timeout.' % host)
-            logging.info('connection (%s) close.' % host)
+                thread.start_new_thread(self.process, (conn, addr, ) )
+            except:
+                logging.debug("thread can't start ...")
+
 
 if __name__ == '__main__':
     ip   = "127.0.0.1"
