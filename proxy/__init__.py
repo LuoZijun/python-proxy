@@ -43,7 +43,8 @@ class Session:
 
         if protocol == "socks":
             logging.info('[Session] protocol is Socks')
-            # handle = protocols.socks.Socks(buff=buff, session=self.session)
+            handle = protocols.socks.Socks(buff=buff, session=self.session)
+            handle.handle()
             self.close()
 
         elif protocol == "http":
