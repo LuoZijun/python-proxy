@@ -20,7 +20,7 @@ Python Socks5 Proxy
 
     git clone https://github.com/LuoZijun/python-proxy
     cd python-proxy
-    python proxy.py
+    python -m proxy
 
 .. image:: assets/socks5.config.png
 
