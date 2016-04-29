@@ -20,7 +20,7 @@ Python Socks5 Proxy
 
     git clone https://github.com/LuoZijun/python-proxy
     cd python-proxy
-    python sock5.py
+    python proxy.py
 
 .. image:: assets/socks5.config.png
 
@@ -35,11 +35,14 @@ Python Socks5 Proxy
 在你的代码当中引用：
 
 .. code:: python
+    
+    from proxy import Proxy
 
-    ip, port = ("127.0.0.1", 1070)
-    sock5    = Sock5(ip=ip, port=port)
-
-    sock5.run()
+    if __name__ == '__main__':
+        host  = "0.0.0.0"
+        port  = 1070
+        proxy = Proxy(host=host, port=port)
+        proxy.run()
 
 
 依赖
@@ -70,4 +73,4 @@ RFC1928对于 SOCKS Request 的协议定义:
 
 其中，`0x09` 这个位是 `DST.ADDR` 地址变量的长度，但是在 `curl` 实现的协议里面似乎不是这样。地址得不到正确解析。
 
- 
+
