@@ -3,9 +3,10 @@
 
 import os, sys, time
 import socket, struct, select
-import thread, logging
+import logging
 
-from urlparse import urlparse
+from   proxy.utils import DummySocket
+from   urlparse    import urlparse
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -404,57 +405,76 @@ class Connection:
             self.connection.send('\x05\xFF')
             return False
 
-class Sock5:
-    ip      = "127.0.0.1"
-    port    = 1070
-    service = None
+class Relay:
+    def __init__(self):
+        pass
 
-    def __init__(self, ip="127.0.0.1", port=1070):
-        self.ip   = ip
-        self.port = port
-    def run(self):
-        
-        logging.info("Python proxy run on %s:%d ..." %(self.ip, self.port))
+class Socks4:
+    def __init__(self, buff="", session=None, host="", port=0):
+        self.host    = host
+        self.port    = port
+        self.buff    = buff
+        self.session = session
 
-        self.service = socket.socket()
-        self.service.bind((self.ip, self.port))
-        self.service.listen(50)
+    def handle(self):
+        # not support.
+        pass
 
-        # run forever
-        try:
-            self.loop()
-        except (KeyboardInterrupt, SystemExit):
-            logging.info('server shutdown ...')
-            self.service.close()
+class Socks5:
+    def __init__(self, buff="", session=None, host="", port=0):
+        self.host    = host
+        self.port    = port
+        self.buff    = buff
+        self.session = session
 
-    def process(self, conn, addr):
-        host = "%s: %d" %(addr[0], addr[1])
-
-        logging.info('connection (%s) begin ...' % host )
-        
-        connection = Connection(connection=conn, ip=addr[0], port=addr[1])
-        try:
-            connection.start()
-        except socket.timeout:
-            logging.warning('connection(%s) timeout.' % host)
-        except KeyboardInterrupt:
-            conn.close()
-            raise KeyboardInterrupt
-
-        logging.info('connection (%s) close.' % host )
-
-    def loop(self):
-        while True:
-            conn, addr = self.service.accept()
-            try:
-                thread.start_new_thread(self.process, (conn, addr, ) )
-            except:
-                logging.debug("thread can't start ...")
+    def handle(self):
+        pass
+    
 
 
-if __name__ == '__main__':
-    ip   = "0.0.0.0"
-    port = 1070
-    sock5 = Sock5(ip=ip, port=port)
-    sock5.run()
+class Socks:
+    def __init__(self, buff="", session=None, host="", port=0):
+        self.host    = host
+        self.port    = port
+        self.buff    = buff
+        self.session = session
+    def handle(self):
+        self.shake_hands()
+    def shake_hands(self):
+        """
+        Request:
+           +----+----------+----------+
+           |VER | NMETHODS | METHODS  |
+           +----+----------+----------+
+           | 1  |    1     | 1 to 255 |
+           +----+----------+----------+
+        Response:
+            +----+--------+
+            |VER | METHOD |
+            +----+--------+
+            | 1  |   1    |
+            +----+--------+
+            回复结尾为0xFF，表示服务器实现该客户端请求的方法（Method） 
+        """
+        """
+            support_nmethod   = ['\x00','\x02','\x01']
+            support_version   = ['\x05']         
+            support_method    = ['\x00','\x01']
+            support_cmd       = ['\x01']
+            support_addr_type = ['\x01','\x03']
+            support_protocol  = ['HTTP']
+        """
+        fd                = DummySocket(buff=self.buff, connection=self.session)
+        version, nmethods = struct.unpack("!bb", fd.recv(2))
+        methods           = fd.recv( nmethods )
+        if version   == 0x04:
+            self.session.send('\x05\x00')
+            socks    = Socks4(session=self.session)
+            socks.handle()
+        elif version == 0x05:
+            self.session.send('\x05\x00')
+            socks    = Socks5(session=self.session)
+            socks.handle()
+        else:
+            self.session.send('\x05\xFF')
 
