@@ -61,8 +61,8 @@ SOCKS:
 
 *SOCKS 4*
 
-*   `SOCKS4.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol>`_ ,   SOCKS: A protocol for TCP proxy across firewalls | `<http://www.openssh.com/txt/socks4.protocol>`_
-*   `SOCKS4A.protocol` <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol>_ , SOCKS 4A: A  Simple Extension to SOCKS 4 Protocol | `<http://www.openssh.com/txt/socks4a.protocol>`_
+*   `SOCKS4.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol>`_ ,   SOCKS: A protocol for TCP proxy across firewalls | `OpenSSH <http://www.openssh.com/txt/socks4.protocol>`_
+*   `SOCKS4A.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol>｀_ , SOCKS 4A: A  Simple Extension to SOCKS 4 Protocol | `OpenSSH <http://www.openssh.com/txt/socks4a.protocol>`_
 
 
 *   `More <https://tools.ietf.org/googleresults?cx=011177064926444307064%3Arsqif7nmmi0&q=socks&sa=Google+Search&cof=FORID%3A9&siteurl=tools.ietf.org%2Fhtml%2F&ref=&ss=583j88683j5>`_
