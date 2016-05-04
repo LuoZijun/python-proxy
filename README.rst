@@ -25,9 +25,9 @@ Python Socks5 Proxy
 .. image:: assets/socks5.config.png
 
 
-然后在你的浏览器当中的网络设置里，填上 代理地址： `127.0.0.1`，端口：`1070`。
+然后在你的浏览器当中的网络设置里，填上 代理地址： `127.0.0.1` ，端口： `1070` 。
 
-最后勾上 `SOCKS 5` 和 `远程DNS`选项。
+最后勾上 `SOCKS 5` 和 `远程DNS` 选项。
 
 .. image:: assets/socks5.png
 
@@ -61,8 +61,8 @@ SOCKS:
 
 *SOCKS 4*
 
-*   `SOCKS4.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol>`_ ,   SOCKS: A protocol for TCP proxy across firewalls | `OpenSSH <http://www.openssh.com/txt/socks4.protocol>`_
-*   `SOCKS4A.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol>`_ , SOCKS 4A: A  Simple Extension to SOCKS 4 Protocol | `OpenSSH <http://www.openssh.com/txt/socks4a.protocol>`_
+*   `SOCKS4.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol>`_ ,   SOCKS: A protocol for TCP proxy across firewalls | `OpenSSH Socks4 <http://www.openssh.com/txt/socks4.protocol>`_
+*   `SOCKS4A.protocol <http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol>`_ , SOCKS 4A: A  Simple Extension to SOCKS 4 Protocol | `OpenSSH Socks4a <http://www.openssh.com/txt/socks4a.protocol>`_
 
 
 *   `More <https://tools.ietf.org/googleresults?cx=011177064926444307064%3Arsqif7nmmi0&q=socks&sa=Google+Search&cof=FORID%3A9&siteurl=tools.ietf.org%2Fhtml%2F&ref=&ss=583j88683j5>`_
